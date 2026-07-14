@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+*.egg-info/
+dist/
+build/
+
+# Data
+data/processed/
+
+# Outputs
+outputs/
+*.npy
+
+# Environment
+.conda/
+venv/
+.env
