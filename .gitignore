@@ -17,3 +17,4 @@ outputs/
 .conda/
 venv/
 .env
+umap_embedding.png
