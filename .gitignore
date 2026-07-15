@@ -6,15 +6,22 @@ __pycache__/
 dist/
 build/
 
-# Data
+# Generated data and experiment outputs
 data/processed/
-
-# Outputs
 outputs/
 *.npy
+*.pt
+*.ckpt
+*.safetensors
+wandb/
+
+# Local notebook artifacts
+*.pkl
+*.png
+*.pdf
+.DS_Store
 
 # Environment
 .conda/
 venv/
 .env
-umap_embedding.png

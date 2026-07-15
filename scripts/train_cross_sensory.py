@@ -11,7 +11,12 @@ import argparse
 import json
 import math
 import random
+import sys
 from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 import numpy as np
 import pandas as pd
@@ -19,9 +24,8 @@ import torch
 from sklearn.metrics import f1_score
 from torch.utils.data import DataLoader, Dataset, Sampler
 
-from src.classifier.model import apply_lora
 from src.dataset.sensory import ODOR_FAMILIES, TASTE_LABELS, build_masked_targets
-from src.sensory import CrossSensoryModel, cross_sensory_loss
+from src.sensory import CrossSensoryModel, apply_lora, cross_sensory_loss
 
 
 class SensoryDataset(Dataset):
