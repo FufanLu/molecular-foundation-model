@@ -15,8 +15,25 @@ class LoRALinear(nn.Module):
         self.scaling = alpha / r
         self.dropout = nn.Dropout(dropout) if dropout > 0 else nn.Identity()
 
-        self.lora_A = nn.Parameter(torch.zeros(r, original.in_features))
-        self.lora_B = nn.Parameter(torch.zeros(original.out_features, r))
+        # Create adapters on the same device/dtype as the wrapped layer.
+        # This matters when LoRA is injected after the backbone has already
+        # been moved to CUDA (as happens in the Colab notebook).
+        self.lora_A = nn.Parameter(
+            torch.zeros(
+                r,
+                original.in_features,
+                device=original.weight.device,
+                dtype=original.weight.dtype,
+            )
+        )
+        self.lora_B = nn.Parameter(
+            torch.zeros(
+                original.out_features,
+                r,
+                device=original.weight.device,
+                dtype=original.weight.dtype,
+            )
+        )
         nn.init.kaiming_uniform_(self.lora_A, a=5 ** 0.5)
         nn.init.zeros_(self.lora_B)
 
