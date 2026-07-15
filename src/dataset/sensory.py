@@ -608,6 +608,14 @@ def prepare_sensory_dataset(
 
 
 def _main() -> None:
+    # ChemTastesDB contains a few unusual ionic/hydrogen records.  Their RDKit
+    # warning is non-fatal and otherwise floods Colab output; parse errors are
+    # deliberately left enabled and remain visible in the audit.
+    try:
+        from rdkit import RDLogger
+        RDLogger.DisableLog("rdApp.warning")
+    except ImportError:
+        pass
     parser = argparse.ArgumentParser(description="Prepare cross-sensory molecular records.")
     parser.add_argument("--raw-dir", type=Path, default=RAW_DIR)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
