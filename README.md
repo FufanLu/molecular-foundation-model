@@ -83,7 +83,7 @@ The supported execution environment is a Colab GPU runtime. Open
 [the Colab notebook](notebooks/train_cross_sensory_colab.ipynb), then:
 
 1. Clone or upload this current repository revision.
-2. Provide the four source files under `data/raw/leffingwell/`.
+2. Provide the four source files directly under `data/raw/`.
 3. Run the preparation cell to create the `sensory-v3` processed dataset.
    Re-run this step after pulling this revision; `sensory-v2` files are
    intentionally rejected by training.

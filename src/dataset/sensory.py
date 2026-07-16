@@ -22,7 +22,7 @@ import pandas as pd
 
 
 SCHEMA_VERSION = "sensory-v3"
-RAW_DIR = Path(__file__).resolve().parents[2] / "data" / "raw" / "leffingwell"
+RAW_DIR = Path(__file__).resolve().parents[2] / "data" / "raw"
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "processed" / "sensory"
 
 # The main odor task is intentionally finer than the previous five-class

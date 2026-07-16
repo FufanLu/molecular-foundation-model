@@ -14,7 +14,7 @@ learning. It is not a clinical, toxicological, or sensory-safety dataset.
 | FlavorDB | Odor descriptors plus **weak** flavor wording. |
 | ChemTastesDB | Curated basic-taste labels and molecular structures. |
 
-The raw files are stored under `data/raw/leffingwell/` for the current
+The raw files are stored directly under `data/raw/` for the current
 reproducible snapshot. Every downstream user is responsible for complying with
 the original source terms, attribution requirements, and any restrictions on
 redistribution or commercial use.
