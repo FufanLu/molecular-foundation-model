@@ -369,6 +369,7 @@ def main() -> None:
     result = {
         "validation": checkpoint["validation"],
         "test": test,
+        "split": {"test_fold": args.test_fold, "val_fold": args.val_fold},
         "task_definition": {
             "core_taste_labels": list(TASTE_LABELS),
             "low_shot_taste_labels": list(LOW_SHOT_TASTE_LABELS),

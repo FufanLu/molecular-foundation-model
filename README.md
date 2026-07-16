@@ -60,6 +60,22 @@ molecules, 3,256 curated taste-labelled molecules, 134 exact odor--taste
 pairs, and 47 salty molecules. Read [the data card](docs/DATA_CARD.md) before
 interpreting results.
 
+## Experiment tracking
+
+The [experiment ledger](reports/EXPERIMENT_LEDGER.md) preserves the completed
+historical v2 Fold 0 ablations. Future v3 runs should be summarised only after
+all available test folds are complete:
+
+```bash
+python scripts/aggregate_cross_sensory.py \
+  --metrics outputs/v3_d/fold*_metrics.json \
+  --output-dir reports/v3_d_5fold
+```
+
+The aggregator writes a machine-readable `summary.json` and a Markdown table
+with held-out mean ± standard deviation. It rejects mixed task definitions,
+weak-guidance settings, and duplicate test folds.
+
 ## Quick start: Colab
 
 The supported execution environment is a Colab GPU runtime. Open
