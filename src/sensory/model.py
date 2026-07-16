@@ -1,4 +1,4 @@
-"""Shared Uni-Mol encoder with odor/taste heads in one latent space."""
+"""3D molecular encoder with sensory-label prototype alignment."""
 
 from __future__ import annotations
 
@@ -8,11 +8,13 @@ import torch.nn.functional as F
 
 
 class CrossSensoryModel(nn.Module):
-    """Predict odor, curated taste, and weak flavor while aligning projections.
+    """Predict sensory labels and align a 3D molecule space to label prototypes.
 
-    The encoder is shared.  Separate task heads prevent one modality's label
-    convention from overwriting the other, while the two projection heads are
-    aligned only for molecules that have labels in both modalities.
+    Odor and taste are not independent views of the same molecular embedding.
+    Instead, molecules are mapped to one shared projection space, while odor
+    and taste labels each own prototypes in that space. Cross-sensory losses
+    therefore align label sets supported by the same molecule, avoiding the
+    trivial same-molecule identity objective of separate projection heads.
     """
 
     def __init__(
@@ -33,23 +35,17 @@ class CrossSensoryModel(nn.Module):
         )
         self.odor_head = nn.Linear(embedding_dim, odor_dim)
         self.taste_head = nn.Linear(embedding_dim, taste_dim)
-        # FlavorDB wording is kept separate from curated basic taste labels.
+        # FlavorDB wording remains a separate, optional weak-supervision head.
         self.weak_taste_head = nn.Linear(embedding_dim, taste_dim)
-        self.odor_projection = nn.Sequential(
+        self.molecule_projection = nn.Sequential(
             nn.Linear(embedding_dim, projection_dim),
             nn.GELU(),
             nn.Linear(projection_dim, projection_dim),
         )
-        self.taste_projection = nn.Sequential(
-            nn.Linear(embedding_dim, projection_dim),
-            nn.GELU(),
-            nn.Linear(projection_dim, projection_dim),
-        )
-        self.weak_taste_projection = nn.Sequential(
-            nn.Linear(embedding_dim, projection_dim),
-            nn.GELU(),
-            nn.Linear(projection_dim, projection_dim),
-        )
+        self.odor_prototypes = nn.Parameter(torch.empty(odor_dim, projection_dim))
+        self.taste_prototypes = nn.Parameter(torch.empty(taste_dim, projection_dim))
+        nn.init.normal_(self.odor_prototypes, std=0.02)
+        nn.init.normal_(self.taste_prototypes, std=0.02)
 
     def encode(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         """Get the differentiable molecular CLS representation from Uni-Mol."""
@@ -67,15 +63,12 @@ class CrossSensoryModel(nn.Module):
 
     def forward(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         embedding = self.trunk(self.encode(batch))
-        odor_projection = F.normalize(self.odor_projection(embedding), dim=-1)
-        taste_projection = F.normalize(self.taste_projection(embedding), dim=-1)
-        weak_taste_projection = F.normalize(self.weak_taste_projection(embedding), dim=-1)
         return {
             "embedding": embedding,
             "odor_logits": self.odor_head(embedding),
             "taste_logits": self.taste_head(embedding),
             "weak_taste_logits": self.weak_taste_head(embedding),
-            "odor_projection": odor_projection,
-            "taste_projection": taste_projection,
-            "weak_taste_projection": weak_taste_projection,
+            "molecule_projection": F.normalize(self.molecule_projection(embedding), dim=-1),
+            "odor_prototypes": F.normalize(self.odor_prototypes, dim=-1),
+            "taste_prototypes": F.normalize(self.taste_prototypes, dim=-1),
         }

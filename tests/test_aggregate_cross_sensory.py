@@ -16,7 +16,10 @@ def metrics(fold: int, score: float) -> dict:
             "core_taste_labels": ["sweet", "bitter", "umami"],
             "low_shot_taste_labels": ["sour", "salty"],
         },
-        "weak_guidance": {
+        "alignment": {
+            "prototype_weight": 0.05,
+            "strong_alignment_weight": 0.05,
+            "strong_temperature": 0.07,
             "weak_taste_weight": 0.02,
             "weak_contrastive_weight": 0.01,
             "weak_temperature": 0.5,
@@ -52,13 +55,13 @@ class AggregateCrossSensoryTest(unittest.TestCase):
             self.assertAlmostEqual(summary["test"]["score"]["std"], 2 ** -0.5 / 5)
             self.assertIn("Core taste labels: sweet, bitter, umami", (output / "summary.md").read_text())
 
-    def test_rejects_mixed_guidance(self):
+    def test_rejects_mixed_alignment(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             first, second = root / "fold0_metrics.json", root / "fold1_metrics.json"
             first.write_text(json.dumps(metrics(0, 0.4)), encoding="utf-8")
             incompatible = metrics(1, 0.6)
-            incompatible["weak_guidance"]["weak_temperature"] = 0.2
+            incompatible["alignment"]["weak_temperature"] = 0.2
             second.write_text(json.dumps(incompatible), encoding="utf-8")
             result = subprocess.run(
                 [sys.executable, str(SCRIPT), "--metrics", str(first), str(second), "--output-dir", str(root / "summary")],
@@ -66,7 +69,7 @@ class AggregateCrossSensoryTest(unittest.TestCase):
                 text=True,
             )
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("different weak_guidance", result.stderr)
+            self.assertIn("different alignment", result.stderr)
 
 
 if __name__ == "__main__":

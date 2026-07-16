@@ -49,5 +49,5 @@ python scripts/aggregate_cross_sensory.py \
   --output-dir reports/v3_d_5fold
 ```
 
-The aggregator rejects duplicate folds, incompatible weak-guidance settings,
-or incompatible core/low-shot task definitions.
+The aggregator rejects duplicate folds, incompatible alignment settings, or
+incompatible core/low-shot task definitions.

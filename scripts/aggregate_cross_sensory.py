@@ -48,7 +48,7 @@ def read_metrics(paths: list[Path]) -> list[dict[str, Any]]:
 
 def ensure_compatible(runs: list[dict[str, Any]]) -> None:
     reference = runs[0]
-    for field in ("task_definition", "weak_guidance"):
+    for field in ("task_definition", "alignment"):
         expected = reference.get(field)
         for run in runs[1:]:
             if run.get(field) != expected:
@@ -88,7 +88,7 @@ def build_summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
         "folds": [int(run["split"]["test_fold"]) for run in runs],
         "n_folds": len(runs),
         "task_definition": runs[0]["task_definition"],
-        "weak_guidance": runs[0]["weak_guidance"],
+        "alignment": runs[0]["alignment"],
         "inputs": [run["_path"] for run in runs],
         "test": {**test, "score": summarize(score_values)},
     }
@@ -104,7 +104,7 @@ def markdown(summary: dict[str, Any]) -> str:
         "",
         f"- Core taste labels: {', '.join(summary['task_definition']['core_taste_labels'])}",
         f"- Low-shot labels: {', '.join(summary['task_definition']['low_shot_taste_labels'])}",
-        f"- Weak guidance: `{json.dumps(summary['weak_guidance'], sort_keys=True)}`",
+        f"- Alignment: `{json.dumps(summary['alignment'], sort_keys=True)}`",
         "",
         "## Held-out test metrics",
         "",

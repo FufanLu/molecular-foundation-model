@@ -126,11 +126,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weak-paired-per-batch", type=int, default=2)
     parser.add_argument("--learning-rate", type=float, default=2e-4)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
-    parser.add_argument("--contrastive-weight", type=float, default=0.05)
+    parser.add_argument("--prototype-weight", type=float, default=0.05)
+    parser.add_argument("--contrastive-weight", type=float, default=0.05, help="Strong label-set alignment weight.")
     parser.add_argument("--temperature", type=float, default=0.07)
     parser.add_argument("--weak-temperature", type=float, default=0.2)
     parser.add_argument("--weak-taste-weight", type=float, default=0.15)
-    parser.add_argument("--weak-contrastive-weight", type=float, default=0.01)
+    parser.add_argument("--weak-contrastive-weight", type=float, default=0.01, help="Weak label-set alignment weight.")
     parser.add_argument("--lora-rank", type=int, default=4)
     parser.add_argument("--lora-layers", type=int, default=4)
     parser.add_argument("--projection-dim", type=int, default=128)
@@ -310,7 +311,7 @@ def main() -> None:
 
     for epoch in range(start_epoch, args.epochs):
         model.train()
-        losses = {name: 0.0 for name in ("total", "odor", "taste", "strong_contrastive", "weak_taste", "weak_contrastive")}
+        losses = {name: 0.0 for name in ("total", "odor", "taste", "prototype", "strong_alignment", "weak_taste", "weak_alignment")}
         for batch_inputs, odor, taste, weak_taste, batch_strong, batch_weak in train_loader:
             batch_inputs = move_to_device(batch_inputs, device)
             odor, taste, weak_taste = odor.to(device), taste.to(device), weak_taste.to(device)
@@ -320,6 +321,7 @@ def main() -> None:
                 outputs = model(batch_inputs)
                 terms = cross_sensory_loss(
                     outputs, odor, taste, batch_strong,
+                    prototype_weight=args.prototype_weight,
                     contrastive_weight=args.contrastive_weight,
                     temperature=args.temperature,
                     weak_taste_targets=weak_taste,
@@ -340,8 +342,8 @@ def main() -> None:
         print(
             f"epoch {epoch + 1:02d} loss={averaged['total']:.4f} "
             f"odor_f1={validation['odor']['macro']:.4f} taste_core_f1={validation['taste']['macro']:.4f} "
-            f"strong_nce={averaged['strong_contrastive']:.4f} "
-            f"weak_bce={averaged['weak_taste']:.4f} weak_nce={averaged['weak_contrastive']:.4f} "
+            f"prototype_nce={averaged['prototype']:.4f} strong_align={averaged['strong_alignment']:.4f} "
+            f"weak_bce={averaged['weak_taste']:.4f} weak_align={averaged['weak_alignment']:.4f} "
             f"val={validation['score']:.4f}"
         )
         if validation["score"] > best_score:
@@ -351,7 +353,10 @@ def main() -> None:
                 "epoch": epoch, "model_state_dict": model.state_dict(), "optimizer_state_dict": optimizer.state_dict(),
                 "validation": validation, "target_names": target_names, "odor_labels": list(ODOR_FAMILIES),
                 "taste_labels": list(TASTE_LABELS), "test_fold": args.test_fold, "val_fold": args.val_fold,
-                "weak_guidance": {
+                "alignment": {
+                    "prototype_weight": args.prototype_weight,
+                    "strong_alignment_weight": args.contrastive_weight,
+                    "strong_temperature": args.temperature,
                     "weak_taste_weight": args.weak_taste_weight,
                     "weak_contrastive_weight": args.weak_contrastive_weight,
                     "weak_temperature": args.weak_temperature,
@@ -374,7 +379,7 @@ def main() -> None:
             "core_taste_labels": list(TASTE_LABELS),
             "low_shot_taste_labels": list(LOW_SHOT_TASTE_LABELS),
         },
-        "weak_guidance": checkpoint["weak_guidance"],
+        "alignment": checkpoint["alignment"],
         "checkpoint": str(checkpoint_path),
     }
     (args.output_dir / f"fold{args.test_fold}_metrics.json").write_text(json.dumps(result, indent=2) + "\n")

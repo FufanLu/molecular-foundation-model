@@ -3,7 +3,7 @@
 An auditable, reproducible baseline for learning molecular representations
 across **odor** and **taste**. The project combines Uni-Mol LoRA adaptation,
 curated basic-taste supervision, mapped odor families, and molecule-level
-cross-sensory contrastive learning.
+sensory-label prototype alignment.
 
 The central design choice is to keep evidence quality explicit:
 
@@ -50,10 +50,11 @@ After preparation, `data/processed/sensory/` contains:
 - `is_mixture`: dot-disconnected salts or mixtures; excluded from the main
   Uni-Mol benchmark by default and retained for low-shot salt analysis.
 
-The next training configuration keeps a separate weak-flavor head: strong
-ChemTastesDB pairs use low-temperature InfoNCE, while weak-only FlavorDB pairs
-use high-temperature, low-weight guidance. This is evaluated as an ablation;
-the current Fold 0 report remains the strong-pair baseline.
+The current model maps each 3D molecular embedding into one shared sensory
+space. Odor and taste labels are learned as separate prototypes in that space:
+molecules align to their observed label prototypes, while strong/weak evidence
+aligns odor-label sets to taste-label sets. A separate weak-flavor head keeps
+FlavorDB wording distinct from curated taste supervision.
 
 The current audited corpus has 37,821 source records, 31,971 unique canonical
 molecules, 3,256 curated taste-labelled molecules, 134 exact odor--taste
@@ -68,13 +69,13 @@ all available test folds are complete:
 
 ```bash
 python scripts/aggregate_cross_sensory.py \
-  --metrics outputs/v3_d/fold*_metrics.json \
-  --output-dir reports/v3_d_5fold
+  --metrics outputs/v3_prototype_d/fold*_metrics.json \
+  --output-dir reports/v3_prototype_d_5fold
 ```
 
 The aggregator writes a machine-readable `summary.json` and a Markdown table
 with held-out mean ± standard deviation. It rejects mixed task definitions,
-weak-guidance settings, and duplicate test folds.
+alignment settings, and duplicate test folds.
 
 ## Quick start: Colab
 
@@ -96,13 +97,14 @@ For a shell-based Colab run after preparation:
 ```bash
 PYTHONPATH=. python scripts/train_cross_sensory.py \
   --data data/processed/sensory/molecules.parquet \
-  --output-dir outputs/cross_sensory_weak_nce002 \
+  --output-dir outputs/v3_prototype_d \
   --test-fold 0 --val-fold 1 \
   --epochs 30 --patience 6 \
   --batch-size 16 --lora-layers 4 --lora-rank 4 \
   --paired-per-batch 2 --weak-paired-per-batch 2 \
-  --contrastive-weight 0.05 --weak-taste-weight 0 \
-  --weak-contrastive-weight 0.02 --weak-temperature 0.5
+  --prototype-weight 0.05 --contrastive-weight 0.05 \
+  --weak-taste-weight 0.02 --weak-contrastive-weight 0.01 \
+  --weak-temperature 0.5
 ```
 
 ## Repository layout
@@ -110,7 +112,7 @@ PYTHONPATH=. python scripts/train_cross_sensory.py \
 ```text
 src/
   dataset/sensory.py          # ingestion, standardisation, audit, grouped folds
-  sensory/                    # LoRA, shared encoder, supervised + contrastive losses
+  sensory/                    # LoRA, shared encoder, prototype-alignment losses
 scripts/train_cross_sensory.py
 notebooks/train_cross_sensory_colab.ipynb
 reports/                      # immutable experiment reports
@@ -121,8 +123,8 @@ docs/DATA_CARD.md             # provenance, label contract, limitations
 
 - Odor descriptors are expert/source annotations, not controlled perceptual
   panel measurements.
-- The 134 strong molecule pairs are sufficient for an exploratory contrastive
-  objective, not for a standalone claim of cross-modal alignment.
+- The 134 strong molecule pairs are sufficient for an exploratory label-set
+  alignment objective, not for a standalone claim of cross-modal alignment.
 - Sour and salty are low-resource endpoints. Both are excluded from the main
   training objective and core taste macro-F1, and must be evaluated separately.
 - A final study requires all five folds, validation-only threshold selection,
