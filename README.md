@@ -49,6 +49,11 @@ After preparation, `data/processed/sensory/` contains:
 - `is_mixture`: dot-disconnected salts or mixtures; excluded from the main
   Uni-Mol benchmark by default and retained for low-shot salt analysis.
 
+The next training configuration keeps a separate weak-flavor head: strong
+ChemTastesDB pairs use low-temperature InfoNCE, while weak-only FlavorDB pairs
+use high-temperature, low-weight guidance. This is evaluated as an ablation;
+the current Fold 0 report remains the strong-pair baseline.
+
 The current audited corpus has 37,821 source records, 31,971 unique canonical
 molecules, 3,256 curated taste-labelled molecules, 134 exact odor--taste
 pairs, and 47 salty molecules. Read [the data card](docs/DATA_CARD.md) before
@@ -72,11 +77,12 @@ For a shell-based Colab run after preparation:
 ```bash
 PYTHONPATH=. python scripts/train_cross_sensory.py \
   --data data/processed/sensory/molecules.parquet \
-  --output-dir outputs/cross_sensory \
+  --output-dir outputs/cross_sensory_weak \
   --test-fold 0 --val-fold 1 \
   --epochs 30 --patience 6 \
-  --batch-size 16 --paired-per-batch 2 \
-  --contrastive-weight 0.05
+  --batch-size 16 --paired-per-batch 2 --weak-paired-per-batch 2 \
+  --contrastive-weight 0.05 --weak-taste-weight 0.15 \
+  --weak-contrastive-weight 0.01 --weak-temperature 0.2
 ```
 
 ## Repository layout

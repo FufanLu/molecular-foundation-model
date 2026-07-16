@@ -43,12 +43,42 @@ def cross_sensory_loss(
     paired_mask: torch.Tensor,
     contrastive_weight: float = 0.1,
     temperature: float = 0.07,
+    weak_taste_targets: torch.Tensor | None = None,
+    weak_paired_mask: torch.Tensor | None = None,
+    weak_taste_weight: float = 0.0,
+    weak_contrastive_weight: float = 0.0,
+    weak_temperature: float = 0.2,
 ) -> dict[str, torch.Tensor]:
-    """Return individually logged terms and their weighted total."""
+    """Combine curated supervision with low-weight weak FlavorDB guidance."""
     odor = masked_bce_with_logits(outputs["odor_logits"], odor_targets)
     taste = masked_bce_with_logits(outputs["taste_logits"], taste_targets)
     contrastive = paired_info_nce(
         outputs["odor_projection"], outputs["taste_projection"], paired_mask, temperature
     )
-    total = odor + taste + contrastive_weight * contrastive
-    return {"total": total, "odor": odor, "taste": taste, "contrastive": contrastive}
+    weak_taste = (
+        masked_bce_with_logits(outputs["weak_taste_logits"], weak_taste_targets)
+        if weak_taste_targets is not None
+        else outputs["weak_taste_logits"].sum() * 0.0
+    )
+    weak_contrastive = (
+        paired_info_nce(
+            outputs["odor_projection"], outputs["weak_taste_projection"], weak_paired_mask, weak_temperature
+        )
+        if weak_paired_mask is not None
+        else outputs["weak_taste_projection"].sum() * 0.0
+    )
+    total = (
+        odor
+        + taste
+        + contrastive_weight * contrastive
+        + weak_taste_weight * weak_taste
+        + weak_contrastive_weight * weak_contrastive
+    )
+    return {
+        "total": total,
+        "odor": odor,
+        "taste": taste,
+        "strong_contrastive": contrastive,
+        "weak_taste": weak_taste,
+        "weak_contrastive": weak_contrastive,
+    }

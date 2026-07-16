@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 
 class CrossSensoryModel(nn.Module):
-    """Predict odor and taste while aligning their molecule representations.
+    """Predict odor, curated taste, and weak flavor while aligning projections.
 
     The encoder is shared.  Separate task heads prevent one modality's label
     convention from overwriting the other, while the two projection heads are
@@ -33,12 +33,19 @@ class CrossSensoryModel(nn.Module):
         )
         self.odor_head = nn.Linear(embedding_dim, odor_dim)
         self.taste_head = nn.Linear(embedding_dim, taste_dim)
+        # FlavorDB wording is kept separate from curated basic taste labels.
+        self.weak_taste_head = nn.Linear(embedding_dim, taste_dim)
         self.odor_projection = nn.Sequential(
             nn.Linear(embedding_dim, projection_dim),
             nn.GELU(),
             nn.Linear(projection_dim, projection_dim),
         )
         self.taste_projection = nn.Sequential(
+            nn.Linear(embedding_dim, projection_dim),
+            nn.GELU(),
+            nn.Linear(projection_dim, projection_dim),
+        )
+        self.weak_taste_projection = nn.Sequential(
             nn.Linear(embedding_dim, projection_dim),
             nn.GELU(),
             nn.Linear(projection_dim, projection_dim),
@@ -62,10 +69,13 @@ class CrossSensoryModel(nn.Module):
         embedding = self.trunk(self.encode(batch))
         odor_projection = F.normalize(self.odor_projection(embedding), dim=-1)
         taste_projection = F.normalize(self.taste_projection(embedding), dim=-1)
+        weak_taste_projection = F.normalize(self.weak_taste_projection(embedding), dim=-1)
         return {
             "embedding": embedding,
             "odor_logits": self.odor_head(embedding),
             "taste_logits": self.taste_head(embedding),
+            "weak_taste_logits": self.weak_taste_head(embedding),
             "odor_projection": odor_projection,
             "taste_projection": taste_projection,
+            "weak_taste_projection": weak_taste_projection,
         }
