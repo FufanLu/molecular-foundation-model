@@ -28,7 +28,8 @@ redistribution or commercial use.
 4. Map odor terms to a documented 12-family multi-label ontology.
 5. Keep FlavorDB taste wording in `taste_weak_labels`.
 6. Use ChemTastesDB `Class taste` and documented multitaste records for
-   `taste_strong_labels`.
+   `taste_strong_labels`; sweet, bitter, and umami form the main task, while
+   sour and salty remain low-shot endpoints.
 7. Create deterministic scaffold-disjoint, multilabel-balanced folds.
 
 ## Current audited snapshot
@@ -54,7 +55,8 @@ exclusive classes.
   sensory negative; label completeness varies by source.
 - Odor descriptors are semantically broad and can overlap.
 - ChemTastesDB adds stronger basic-taste evidence, but sour and salty remain
-  too small for reliable conventional classifier claims.
+  too small for reliable conventional classifier claims. They are excluded
+  from the main training head and evaluated only as separate low-shot probes.
 - Canonical structure matching does not account for concentration, solvent,
   formulation, stereochemical uncertainty in a source, or experimental setup.
 - The dataset should not be used to infer human safety, exposure limits,
@@ -63,5 +65,6 @@ exclusive classes.
 ## Recommended reporting
 
 Report source version, ontology version, fold assignment, threshold-selection
-procedure, and per-label support. Keep weak FlavorDB wording separate from
-curated taste labels in both training and claims.
+procedure, and per-label support. Report core taste macro-F1 only for sweet,
+bitter, and umami; report sour and salty separately. Keep weak FlavorDB
+wording separate from curated taste labels in both training and claims.

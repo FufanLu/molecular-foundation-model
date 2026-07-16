@@ -24,7 +24,13 @@ import torch
 from sklearn.metrics import f1_score
 from torch.utils.data import DataLoader, Dataset, Sampler
 
-from src.dataset.sensory import ODOR_FAMILIES, TASTE_LABELS, build_masked_targets
+from src.dataset.sensory import (
+    LOW_SHOT_TASTE_LABELS,
+    ODOR_FAMILIES,
+    SCHEMA_VERSION,
+    TASTE_LABELS,
+    build_masked_targets,
+)
 from src.sensory import CrossSensoryModel, apply_lora, cross_sensory_loss
 
 
@@ -207,6 +213,13 @@ def main() -> None:
         raise RuntimeError("This Colab workflow requires a CUDA runtime. Enable a GPU and rerun.")
 
     frame = pd.read_parquet(args.data)
+    schema_versions = set(frame.get("schema_version", pd.Series(dtype="string")).dropna().astype(str))
+    if schema_versions != {SCHEMA_VERSION}:
+        observed = ", ".join(sorted(schema_versions)) or "missing"
+        raise RuntimeError(
+            f"Expected {SCHEMA_VERSION} data, found {observed}. "
+            "Rerun `python -m src.dataset.sensory ...` before training."
+        )
     keep = frame["odor_known"] | frame["taste_known"]
     if not args.include_mixtures:
         keep &= ~frame["is_mixture"]
@@ -232,6 +245,8 @@ def main() -> None:
     )
     features = hub.data["unimol_input"]
     odor_targets = build_masked_targets(frame, tuple(ODOR_FAMILIES), "odor_labels", "odor_known")
+    # TASTE_LABELS is the pre-declared, adequately supported three-label task.
+    # Sour and salty remain in the parquet for separate low-shot probes.
     taste_targets = build_masked_targets(frame, TASTE_LABELS, "taste_strong_labels", "taste_known")
     weak_taste_targets = build_masked_targets(
         frame, TASTE_LABELS, "taste_weak_labels", "taste_weak_known"
@@ -324,7 +339,7 @@ def main() -> None:
         averaged = {name: value / len(train_loader) for name, value in losses.items()}
         print(
             f"epoch {epoch + 1:02d} loss={averaged['total']:.4f} "
-            f"odor_f1={validation['odor']['macro']:.4f} taste_f1={validation['taste']['macro']:.4f} "
+            f"odor_f1={validation['odor']['macro']:.4f} taste_core_f1={validation['taste']['macro']:.4f} "
             f"strong_nce={averaged['strong_contrastive']:.4f} "
             f"weak_bce={averaged['weak_taste']:.4f} weak_nce={averaged['weak_contrastive']:.4f} "
             f"val={validation['score']:.4f}"
@@ -354,6 +369,10 @@ def main() -> None:
     result = {
         "validation": checkpoint["validation"],
         "test": test,
+        "task_definition": {
+            "core_taste_labels": list(TASTE_LABELS),
+            "low_shot_taste_labels": list(LOW_SHOT_TASTE_LABELS),
+        },
         "weak_guidance": checkpoint["weak_guidance"],
         "checkpoint": str(checkpoint_path),
     }

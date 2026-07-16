@@ -1,6 +1,9 @@
 """Dataset loaders and preparation pipelines."""
 
-__all__ = ["ALL_TASTE_LABELS", "ODOR_FAMILIES", "SALT_LABEL", "TASTE_LABELS"]
+__all__ = [
+    "ALL_TASTE_LABELS", "LOW_SHOT_TASTE_LABELS", "ODOR_FAMILIES",
+    "SALT_LABEL", "SOUR_LABEL", "TASTE_LABELS",
+]
 
 
 def __getattr__(name: str):

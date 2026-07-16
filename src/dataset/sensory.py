@@ -21,7 +21,7 @@ from typing import Iterable, Sequence
 import pandas as pd
 
 
-SCHEMA_VERSION = "sensory-v2"
+SCHEMA_VERSION = "sensory-v3"
 RAW_DIR = Path(__file__).resolve().parents[2] / "data" / "raw" / "leffingwell"
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "processed" / "sensory"
 
@@ -64,12 +64,14 @@ ODOR_FAMILIES: dict[str, set[str]] = {
     "aldehydic": {"aldehydic", "ethereal", "metallic", "pungent", "sharp"},
 }
 
-# These are the supervised taste labels.  ``salty`` remains in the prepared
-# data but is excluded from the large-sample taste head and used by the
-# low-shot probe until enough audited examples are available.
-TASTE_LABELS = ("sweet", "bitter", "sour", "umami")
+# Only these labels define the main supervised taste task.  ``sour`` and
+# ``salty`` remain fully auditable in the prepared dataset, but their small
+# curated support makes them low-shot probes rather than training targets.
+TASTE_LABELS = ("sweet", "bitter", "umami")
+SOUR_LABEL = "sour"
 SALT_LABEL = "salty"
-ALL_TASTE_LABELS = (*TASTE_LABELS, SALT_LABEL)
+LOW_SHOT_TASTE_LABELS = (SOUR_LABEL, SALT_LABEL)
+ALL_TASTE_LABELS = (*TASTE_LABELS, *LOW_SHOT_TASTE_LABELS)
 TASTE_TERMS = {
     "sweet": {"sweet", "sweetness"},
     "bitter": {"bitter", "bitterness"},
@@ -405,9 +407,13 @@ def aggregate_records(raw_records: pd.DataFrame) -> pd.DataFrame:
                 "taste_weak_labels": taste_weak_labels,
                 "taste_strong_labels": taste_strong_labels,
                 "odor_known": bool(odor_labels),
+                # ``taste_known`` drives the main three-label task.  Sour and
+                # salty are retained separately for auditable low-shot probes.
                 "taste_known": bool(set(taste_strong_labels) & set(TASTE_LABELS)),
                 "taste_any_known": bool(taste_strong_labels),
                 "taste_weak_known": bool(set(taste_weak_labels) & set(TASTE_LABELS)),
+                "sour_known": SOUR_LABEL in taste_strong_labels,
+                "sour_weak_known": SOUR_LABEL in taste_weak_labels,
                 "salty_known": SALT_LABEL in taste_strong_labels,
                 "salty_weak_known": SALT_LABEL in taste_weak_labels,
                 "paired": bool(odor_labels) and bool(set(taste_strong_labels) & set(TASTE_LABELS)),
@@ -453,8 +459,8 @@ def assign_scaffold_folds(records: pd.DataFrame, n_splits: int = 5) -> pd.DataFr
 
     Ordinary ``GroupKFold`` prevents scaffold leakage but does not balance a
     rare task such as exact odor--taste pairs.  This greedy grouped allocator
-    balances molecule count, odor labels, curated taste labels, pairs, and
-    salty examples while never splitting a scaffold between folds.
+    balances molecule count, odor labels, all curated taste labels, pairs, and
+    low-shot sour/salty examples while never splitting a scaffold between folds.
     """
     if records.empty:
         records = records.copy()
@@ -562,8 +568,11 @@ def build_audit(raw_records: pd.DataFrame, molecules: pd.DataFrame) -> dict[str,
         "source_valid_structure_counts": {source: int(count) for source, count in source_valid.items()},
         "paired_molecule_count": int(molecules["paired"].sum()),
         "odor_labeled_molecule_count": int(molecules["odor_known"].sum()),
-        "taste_labeled_molecule_count": int(molecules["taste_known"].sum()),
+        "core_taste_labeled_molecule_count": int(molecules["taste_known"].sum()),
+        "curated_taste_any_labeled_molecule_count": int(molecules["taste_any_known"].sum()),
         "weak_taste_labeled_molecule_count": int(molecules["taste_weak_known"].sum()),
+        "sour_molecule_count": int(molecules["sour_known"].sum()),
+        "weak_sour_molecule_count": int(molecules["sour_weak_known"].sum()),
         "salty_molecule_count": int(molecules["salty_known"].sum()),
         "weak_salty_molecule_count": int(molecules["salty_weak_known"].sum()),
         "weak_paired_molecule_count": int(molecules["weak_paired"].sum()),
@@ -576,8 +585,9 @@ def build_audit(raw_records: pd.DataFrame, molecules: pd.DataFrame) -> dict[str,
             str(fold): {
                 "molecules": int(len(group)),
                 "odor_labeled": int(group["odor_known"].sum()),
-                "curated_taste_labeled": int(group["taste_known"].sum()),
+                "core_taste_labeled": int(group["taste_known"].sum()),
                 "paired": int(group["paired"].sum()),
+                "sour": int(group["sour_known"].sum()),
                 "salty": int(group["salty_known"].sum()),
             }
             for fold, group in molecules.groupby("fold", sort=True)

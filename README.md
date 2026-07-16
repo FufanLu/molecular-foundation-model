@@ -7,28 +7,29 @@ cross-sensory contrastive learning.
 
 The central design choice is to keep evidence quality explicit:
 
-- **Curated taste labels** come from ChemTastesDB and define the supervised
-  sweet, bitter, sour, and umami task.
+- **Curated taste labels** from ChemTastesDB define the supervised core task:
+  sweet, bitter, and umami. Sour and salty are retained as low-shot endpoints,
+  not folded into training or the headline metric.
 - **FlavorDB taste words** are retained as weak descriptors only; they are not
   silently treated as physiological basic-taste ground truth.
 - Odor and taste records are paired only after RDKit canonicalisation and
   molecule-level provenance checks.
 
-## Current baseline
+## Historical reference run
 
-The first scaffold-disjoint Fold 0 baseline uses a shared Uni-Mol encoder,
-last-four-layer LoRA, separate odor/taste heads, and pair-aware InfoNCE.
+The following Fold 0 result used the earlier `sensory-v2` four-label taste
+head. It is retained for provenance and is **not** directly comparable to new
+`sensory-v3` three-label runs.
 
 | Held-out test metric | Score |
 | --- | ---: |
 | Odor macro-F1, 12 mapped families | 0.3867 |
-| Curated taste macro-F1, 4 labels | 0.5375 |
+| Curated taste macro-F1, 4 labels (v2) | 0.5375 |
 | Mean task score | 0.4621 |
 
-This is a baseline, not a final cross-modal claim. It establishes useful
-signals for common labels while exposing poor scaffold transfer for rare
-labels. See the [Fold 0 report](reports/cross_sensory_fold0_baseline.md) for
-all class-level results and limitations.
+It establishes useful signals for common labels while exposing poor scaffold
+transfer for rare labels. See the [Fold 0 report](reports/cross_sensory_fold0_baseline.md)
+for the historical class-level results and limitations.
 
 ## Dataset contract
 
@@ -45,7 +46,7 @@ After preparation, `data/processed/sensory/` contains:
 - `odor_labels`: mapped multi-label odor families.
 - `taste_strong_labels` / `taste_labels`: ChemTastesDB curated taste labels.
 - `taste_weak_labels`: FlavorDB descriptor words; weak evidence only.
-- `paired`: exact molecules with odor labels and a curated main-taste label.
+- `paired`: exact molecules with odor labels and a curated core-taste label.
 - `is_mixture`: dot-disconnected salts or mixtures; excluded from the main
   Uni-Mol benchmark by default and retained for low-shot salt analysis.
 
@@ -66,7 +67,9 @@ The supported execution environment is a Colab GPU runtime. Open
 
 1. Clone or upload this current repository revision.
 2. Provide the four source files under `data/raw/leffingwell/`.
-3. Run the preparation cell to create the processed sensory dataset.
+3. Run the preparation cell to create the `sensory-v3` processed dataset.
+   Re-run this step after pulling this revision; `sensory-v2` files are
+   intentionally rejected by training.
 4. Run one scaffold fold before launching the remaining four folds.
 
 The notebook intentionally uses `multi_process=False` for Uni-Mol input
@@ -104,8 +107,8 @@ docs/DATA_CARD.md             # provenance, label contract, limitations
   panel measurements.
 - The 134 strong molecule pairs are sufficient for an exploratory contrastive
   objective, not for a standalone claim of cross-modal alignment.
-- Sour and salty are low-resource settings. Salty is excluded from the main
-  taste macro-F1 and should be evaluated separately.
+- Sour and salty are low-resource endpoints. Both are excluded from the main
+  training objective and core taste macro-F1, and must be evaluated separately.
 - A final study requires all five folds, validation-only threshold selection,
   odor-only/multitask/contrastive ablations, and independent validation before
   making strong biological or perceptual claims.

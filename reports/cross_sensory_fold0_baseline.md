@@ -1,9 +1,14 @@
-# Cross-sensory Uni-Mol baseline — Fold 0
+# Cross-sensory Uni-Mol baseline — Fold 0 (historical `sensory-v2`)
 
 **Run:** shared Uni-Mol encoder + last-4-layer LoRA + odor/taste heads +
 pair-aware InfoNCE (`contrastive_weight=0.05`)
 **Split:** scaffold-disjoint; fold 0 test, fold 1 validation
 **Training:** 30 epochs maximum, best validation checkpoint retained
+
+> This historical run trained a four-label taste head. The current
+> `sensory-v3` protocol uses sweet, bitter, and umami as the core taste task;
+> sour and salty are separate low-shot endpoints. Do not compare its taste
+> macro-F1 directly with a v3 run.
 
 ## Headline result
 
@@ -44,8 +49,8 @@ especially for rare odor and taste labels.
 | umami | 0.6731 | 0.7103 | Strong test transfer. |
 | **Macro average** | **0.6896** | **0.5375** | Mainly reduced by sour. |
 
-`salty` is intentionally excluded from this four-label macro-F1 because only
-47 curated examples are available; it remains a separate low-shot probe.
+Under the current v3 protocol, both `sour` and `salty` are separate low-shot
+probes and excluded from the core taste training objective and macro-F1.
 
 ## What this run establishes
 
