@@ -77,13 +77,13 @@ For a shell-based Colab run after preparation:
 ```bash
 PYTHONPATH=. python scripts/train_cross_sensory.py \
   --data data/processed/sensory/molecules.parquet \
-  --output-dir outputs/cross_sensory_weak_lora8 \
+  --output-dir outputs/cross_sensory_weak_lora4_w002 \
   --test-fold 0 --val-fold 1 \
   --epochs 30 --patience 6 \
-  --batch-size 16 --lora-layers 8 --lora-rank 4 \
+  --batch-size 16 --lora-layers 4 --lora-rank 4 \
   --paired-per-batch 2 --weak-paired-per-batch 2 \
-  --contrastive-weight 0.05 --weak-taste-weight 0.15 \
-  --weak-contrastive-weight 0.01 --weak-temperature 0.2
+  --contrastive-weight 0.05 --weak-taste-weight 0.02 \
+  --weak-contrastive-weight 0 --weak-temperature 0.2
 ```
 
 ## Repository layout
