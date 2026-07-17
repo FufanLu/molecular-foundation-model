@@ -69,7 +69,7 @@ all available test folds are complete:
 
 ```bash
 python scripts/aggregate_cross_sensory.py \
-  --metrics outputs/v3_prototype_d/fold*_metrics.json \
+  --metrics outputs/v3_prototype_d/fold*/fold*_metrics.json \
   --output-dir reports/v3_prototype_d_5fold
 ```
 
@@ -87,7 +87,7 @@ The supported execution environment is a Colab GPU runtime. Open
 3. Run the preparation cell to create the `sensory-v3` processed dataset.
    Re-run this step after pulling this revision; `sensory-v2` files are
    intentionally rejected by training.
-4. Run one scaffold fold before launching the remaining four folds.
+4. Run Fold 0 as a smoke test, then run all five predefined scaffold folds.
 
 The notebook intentionally uses `multi_process=False` for Uni-Mol input
 generation; this avoids CUDA/fork deadlocks in Colab.
@@ -97,7 +97,7 @@ For a shell-based Colab run after preparation:
 ```bash
 PYTHONPATH=. python scripts/train_cross_sensory.py \
   --data data/processed/sensory/molecules.parquet \
-  --output-dir outputs/v3_prototype_d \
+  --output-dir outputs/v3_prototype_d/fold0 \
   --test-fold 0 --val-fold 1 \
   --epochs 30 --patience 6 \
   --batch-size 16 --lora-layers 4 --lora-rank 4 \

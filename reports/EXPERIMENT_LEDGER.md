@@ -43,10 +43,8 @@ folds, then aggregate the five `fold*_metrics.json` files:
 
 ```bash
 python scripts/aggregate_cross_sensory.py \
-  --metrics outputs/v3_d/fold0_metrics.json outputs/v3_d/fold1_metrics.json \
-            outputs/v3_d/fold2_metrics.json outputs/v3_d/fold3_metrics.json \
-            outputs/v3_d/fold4_metrics.json \
-  --output-dir reports/v3_d_5fold
+  --metrics outputs/v3_prototype_d/fold*/fold*_metrics.json \
+  --output-dir reports/v3_prototype_d_5fold
 ```
 
 The aggregator rejects duplicate folds, incompatible alignment settings, or
