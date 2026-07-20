@@ -6,14 +6,20 @@ import torch
 import torch.nn.functional as F
 
 
-def masked_bce_with_logits(logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+def masked_bce_with_logits(
+    logits: torch.Tensor,
+    targets: torch.Tensor,
+    pos_weight: torch.Tensor | None = None,
+) -> torch.Tensor:
     """BCE over observed labels only; targets equal to -1 are unknown."""
     if logits.shape != targets.shape:
         raise ValueError(f"Logit shape {tuple(logits.shape)} != target shape {tuple(targets.shape)}")
     mask = targets.ge(0)
     if not mask.any():
         return logits.sum() * 0.0
-    losses = F.binary_cross_entropy_with_logits(logits, targets.clamp_min(0), reduction="none")
+    losses = F.binary_cross_entropy_with_logits(
+        logits, targets.clamp_min(0), pos_weight=pos_weight, reduction="none"
+    )
     return losses.masked_select(mask).mean()
 
 
@@ -108,10 +114,16 @@ def cross_sensory_loss(
     weak_taste_weight: float = 0.0,
     weak_contrastive_weight: float = 0.0,
     weak_temperature: float = 0.5,
+    odor_pos_weight: torch.Tensor | None = None,
+    taste_pos_weight: torch.Tensor | None = None,
 ) -> dict[str, torch.Tensor]:
-    """Combine task BCE with molecule--prototype and label-set alignment."""
-    odor = masked_bce_with_logits(outputs["odor_logits"], odor_targets)
-    taste = masked_bce_with_logits(outputs["taste_logits"], taste_targets)
+    """Combine task BCE with molecule--prototype and label-set alignment.
+
+    ``pos_weight`` applies to the curated strong tasks only; the weak FlavorDB
+    head stays unweighted so noisy descriptor occurrences are not amplified.
+    """
+    odor = masked_bce_with_logits(outputs["odor_logits"], odor_targets, pos_weight=odor_pos_weight)
+    taste = masked_bce_with_logits(outputs["taste_logits"], taste_targets, pos_weight=taste_pos_weight)
     odor_prototype = molecule_prototype_nce(
         outputs["molecule_projection"], outputs["odor_prototypes"], odor_targets, temperature
     )

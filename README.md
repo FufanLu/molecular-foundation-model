@@ -87,7 +87,7 @@ The supported execution environment is a Colab GPU runtime. Open
 3. Run the preparation cell to create the `sensory-v3` processed dataset.
    Re-run this step after pulling this revision; `sensory-v2` files are
    intentionally rejected by training.
-4. Run one scaffold fold before launching the remaining four folds.
+4. Run one scaffold fold (`--folds 0`) before launching all five folds.
 
 The notebook intentionally uses `multi_process=False` for Uni-Mol input
 generation; this avoids CUDA/fork deadlocks in Colab.
@@ -98,7 +98,7 @@ For a shell-based Colab run after preparation:
 PYTHONPATH=. python scripts/train_cross_sensory.py \
   --data data/processed/sensory/molecules.parquet \
   --output-dir outputs/v3_prototype_d \
-  --test-fold 0 --val-fold 1 \
+  --folds 0,1,2,3,4 \
   --epochs 30 --patience 6 \
   --batch-size 16 --lora-layers 4 --lora-rank 4 \
   --paired-per-batch 2 --weak-paired-per-batch 2 \
@@ -107,12 +107,30 @@ PYTHONPATH=. python scripts/train_cross_sensory.py \
   --weak-temperature 0.5
 ```
 
+Training behaviour worth knowing:
+
+- Uni-Mol inputs are featurised once per SMILES list and cached as
+  `data/processed/sensory/unimol_features_<digest>.pkl`; every fold reuses
+  the cache, so all five folds share identical conformers. Use
+  `--refresh-features` to force recomputation.
+- `--folds` validates on fold `(test + 1) % 5` and skips any fold whose
+  metrics JSON already exists, so an interrupted Colab run resumes cheaply.
+- Per-label decision thresholds are selected on each fold's validation split
+  and locked into the checkpoint; the test split is evaluated once with them.
+  A fixed-0.5 reference is kept in `test_at_fixed_threshold`.
+- The masked BCE uses training-split `pos_weight` (capped by
+  `--pos-weight-cap`, default 10) for the curated odor/taste tasks; the weak
+  FlavorDB head stays unweighted.
+- Each metrics JSON also reports retrieval probes (Recall@1/5, MRR): whether
+  paired molecules' projections recover identical sensory label sets.
+
 ## Repository layout
 
 ```text
 src/
   dataset/sensory.py          # ingestion, standardisation, audit, grouped folds
-  sensory/                    # LoRA, shared encoder, prototype-alignment losses
+  sensory/                    # LoRA, shared encoder, prototype-alignment losses,
+                              # thresholds/pos_weight/retrieval metrics
 scripts/train_cross_sensory.py
 notebooks/train_cross_sensory_colab.ipynb
 reports/                      # immutable experiment reports
