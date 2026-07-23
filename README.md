@@ -15,6 +15,24 @@ The central design choice is to keep evidence quality explicit:
 - Odor and taste records are paired only after RDKit canonicalisation and
   molecule-level provenance checks.
 
+## Current v3 result (five scaffold folds, 2026-07-22)
+
+The first complete `sensory-v3` run used the prototype-alignment objective
+with combined weak guidance. Validation-locked per-label thresholds were
+selected inside each fold before the single test evaluation.
+
+| Held-out test metric (n=5 folds) | Mean ± SD |
+| --- | ---: |
+| Odor macro-F1, 12 mapped families | 0.4943 ± 0.0097 |
+| Curated taste macro-F1, 3 core labels | 0.7573 ± 0.0465 |
+| Combined score | 0.6258 ± 0.0247 |
+
+The seven pre-declared, adequately supported odor families reach a combined
+macro F1 of ≈0.62; long-tail families (spicy, animalic, phenolic, nutty)
+remain unreliable, with nutty swinging 0.087→0.585 across folds. See the
+[experiment ledger](reports/EXPERIMENT_LEDGER.md) for the full per-fold table,
+retrieval probes, and reading notes.
+
 ## Historical reference run
 
 The following Fold 0 result used the earlier `sensory-v2` four-label taste

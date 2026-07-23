@@ -8,7 +8,10 @@ build/
 
 # Generated data and experiment outputs
 data/processed/
-outputs/
+outputs/*
+!outputs/*/
+outputs/*/*
+!outputs/*/fold*_metrics.json
 *.npy
 *.pt
 *.ckpt

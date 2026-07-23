@@ -1,0 +1,135 @@
+{
+  "validation": {
+    "odor": {
+      "fruity": 0.7619047619047619,
+      "floral": 0.5627118644067797,
+      "green": 0.6705394190871369,
+      "woody": 0.5796610169491525,
+      "fatty": 0.6352941176470588,
+      "sulfurous": 0.7831715210355987,
+      "spicy": 0.2297650130548303,
+      "sweet_aromatic": 0.546583850931677,
+      "nutty": 0.3104693140794224,
+      "animalic": 0.34782608695652173,
+      "phenolic": 0.27450980392156865,
+      "aldehydic": 0.5027624309392266,
+      "macro": 0.5170999334094778
+    },
+    "taste": {
+      "sweet": 0.8272921108742004,
+      "bitter": 0.8360655737704918,
+      "umami": 0.7311827956989247,
+      "macro": 0.798180160114539
+    },
+    "score": 0.6576400467620084
+  },
+  "test": {
+    "odor": {
+      "fruity": 0.660280029476787,
+      "floral": 0.6727605118829981,
+      "green": 0.5976653696498054,
+      "woody": 0.4527363184079602,
+      "fatty": 0.5666666666666667,
+      "sulfurous": 0.7958477508650519,
+      "spicy": 0.4437564499484004,
+      "sweet_aromatic": 0.6217008797653959,
+      "nutty": 0.08695652173913043,
+      "animalic": 0.2127659574468085,
+      "phenolic": 0.32020997375328086,
+      "aldehydic": 0.38162544169611307,
+      "macro": 0.48441432260819983
+    },
+    "taste": {
+      "sweet": 0.6736292428198434,
+      "bitter": 0.7325102880658436,
+      "umami": 0.651685393258427,
+      "macro": 0.6859416413813714
+    },
+    "score": 0.5851779819947855
+  },
+  "test_at_fixed_threshold": {
+    "odor": {
+      "fruity": 0.6611694152923538,
+      "floral": 0.645933014354067,
+      "green": 0.5283797729618163,
+      "woody": 0.4527363184079602,
+      "fatty": 0.5768566493955095,
+      "sulfurous": 0.7292817679558011,
+      "spicy": 0.43618090452261304,
+      "sweet_aromatic": 0.6020477815699659,
+      "nutty": 0.08097165991902834,
+      "animalic": 0.22727272727272727,
+      "phenolic": 0.3364140480591497,
+      "aldehydic": 0.38764044943820225,
+      "macro": 0.4720737090957663
+    },
+    "taste": {
+      "sweet": 0.7078384798099763,
+      "bitter": 0.6822429906542056,
+      "umami": 0.6808510638297872,
+      "macro": 0.6903108447646563
+    },
+    "score": 0.5811922769302114
+  },
+  "thresholds": {
+    "odor": [
+      0.48,
+      0.68,
+      0.38,
+      0.5,
+      0.64,
+      0.94,
+      0.54,
+      0.62,
+      0.62,
+      0.48,
+      0.64,
+      0.64
+    ],
+    "taste": [
+      0.84,
+      0.16,
+      0.74
+    ]
+  },
+  "retrieval": {
+    "odor_profile": {
+      "recall@1": 0.07692307692307693,
+      "recall@5": 0.19230769230769232,
+      "mrr": 0.1755279691102275,
+      "queries": 26
+    },
+    "taste_profile": {
+      "recall@1": 0.6578947368421053,
+      "recall@5": 0.8947368421052632,
+      "mrr": 0.7592966474891683,
+      "queries": 38
+    }
+  },
+  "split": {
+    "test_fold": 0,
+    "val_fold": 1
+  },
+  "task_definition": {
+    "core_taste_labels": [
+      "sweet",
+      "bitter",
+      "umami"
+    ],
+    "low_shot_taste_labels": [
+      "sour",
+      "salty"
+    ],
+    "threshold_selection": "validation",
+    "pos_weight_cap": 10.0
+  },
+  "alignment": {
+    "prototype_weight": 0.05,
+    "strong_alignment_weight": 0.05,
+    "strong_temperature": 0.07,
+    "weak_taste_weight": 0.02,
+    "weak_contrastive_weight": 0.01,
+    "weak_temperature": 0.5
+  },
+  "checkpoint": "outputs/v3_prototype_d/fold0_best.pt"
+}
