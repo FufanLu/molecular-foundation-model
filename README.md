@@ -150,7 +150,9 @@ src/
   sensory/                    # LoRA, shared encoder, prototype-alignment losses,
                               # thresholds/pos_weight/retrieval metrics
 scripts/train_cross_sensory.py
+scripts/fingerprint_baseline.py  # Morgan FP + logistic regression 2D control
 notebooks/train_cross_sensory_colab.ipynb
+notebooks/fingerprint_baseline_colab.ipynb  # five-fold 2D control, CPU-only
 reports/                      # immutable experiment reports
 docs/DATA_CARD.md             # provenance, label contract, limitations
 ```
