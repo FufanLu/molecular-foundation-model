@@ -31,6 +31,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+import numpy as np
 import pandas as pd
 
 from src.dataset.sensory import ODOR_FAMILIES
@@ -53,7 +54,8 @@ def molecule_terms(source_records: pd.DataFrame) -> dict[str, set[str]]:
         smiles = row["canonical_smiles"]
         if not isinstance(smiles, str) or not smiles:
             continue
-        terms = row["odor_terms"] if isinstance(row["odor_terms"], (list, tuple)) else []
+        # Parquet list columns round-trip as numpy arrays, not lists.
+        terms = row["odor_terms"] if isinstance(row["odor_terms"], (list, tuple, np.ndarray)) else []
         grouped.setdefault(smiles, set()).update(terms)
     return grouped
 

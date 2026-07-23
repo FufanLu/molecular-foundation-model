@@ -14,6 +14,7 @@ import pandas as pd
 from scripts.fingerprint_baseline import (
     decision_scores,
     fit_label_models,
+    molecule_odor_terms,
     morgan_features,
     run_fold,
     shuffled_taxonomy,
@@ -107,6 +108,21 @@ class ShuffledTaxonomyTest(unittest.TestCase):
     def test_grouping_is_actually_destroyed(self) -> None:
         shuffled = shuffled_taxonomy(self.TAXONOMY, seed=3)
         self.assertNotEqual(shuffled, {family: set(terms) for family, terms in self.TAXONOMY.items()})
+
+
+class MoleculeOdorTermsTest(unittest.TestCase):
+    def test_parquet_numpy_arrays_are_accepted(self) -> None:
+        # Parquet list columns round-trip as numpy arrays, not Python lists.
+        frame = pd.DataFrame([
+            {"canonical_smiles": "CCO", "odor_terms": np.array(["fruity", "apple"], dtype=object)},
+            {"canonical_smiles": "CCO", "odor_terms": np.array(["woody"], dtype=object)},
+            {"canonical_smiles": "c1ccccc1", "odor_terms": ["green"]},
+            {"canonical_smiles": None, "odor_terms": np.array(["floral"], dtype=object)},
+        ])
+        terms = molecule_odor_terms(frame)
+        self.assertEqual(terms["CCO"], {"fruity", "apple", "woody"})
+        self.assertEqual(terms["c1ccccc1"], {"green"})
+        self.assertNotIn(None, terms)
 
 
 if __name__ == "__main__":

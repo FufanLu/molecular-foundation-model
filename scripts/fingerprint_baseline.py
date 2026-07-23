@@ -85,7 +85,8 @@ def molecule_odor_terms(source_records: pd.DataFrame) -> dict[str, set[str]]:
         smiles = row["canonical_smiles"]
         if not isinstance(smiles, str) or not smiles:
             continue
-        terms = row["odor_terms"] if isinstance(row["odor_terms"], (list, tuple)) else []
+        # Parquet list columns round-trip as numpy arrays, not lists.
+        terms = row["odor_terms"] if isinstance(row["odor_terms"], (list, tuple, np.ndarray)) else []
         grouped.setdefault(smiles, set()).update(terms)
     return grouped
 
