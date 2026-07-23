@@ -63,6 +63,43 @@ Artifacts: `outputs/v3_prototype_d/fold{0..4}_metrics.json` and
 `scripts/aggregate_cross_sensory.py` on the archived fold files reproduces
 `summary.json` bit-identically.
 
+## 2D control: Morgan fingerprint + logistic regression (2026-07-23)
+
+Protocol: identical scaffold folds, masked targets, and validation-locked
+threshold protocol as the v3 five-fold run above. Morgan fingerprints
+(radius 2, 2048 bits) with per-label balanced logistic regression
+(liblinear, C=1.0), each label fit on its observed training rows. No
+retrieval probes: the fingerprint space is not the learned projection.
+
+| Metric | 2D control (Mean ± SD) | Uni-Mol LoRA 3D (Mean ± SD) |
+| --- | ---: | ---: |
+| Odor macro-F1 | 0.4849 ± 0.0069 | 0.4943 ± 0.0097 |
+| Taste macro-F1 | 0.7855 ± 0.0365 | 0.7573 ± 0.0465 |
+| Combined score | 0.6352 ± 0.0182 | 0.6258 ± 0.0247 |
+
+### Reading the 2D-vs-3D comparison
+
+- **Taste: the 2D control wins every fold** (mean +0.028; paired Wilcoxon
+  p=0.0625, the minimum attainable at n=5) and every label (sweet +0.058,
+  bitter +0.020, umami +0.007). Consistent with the broader evidence that
+  fingerprint features capture sweet/bitter pharmacophore patterns well.
+- **Odor: the 3D model leads on 4 of 5 folds** (mean +0.009; p=0.1875) and
+  9 of 12 labels, with the largest margins on sulfurous (+0.043) and woody
+  (+0.026). Suggestive but underpowered at n=5.
+- **Combined score is a statistical tie** (p=0.1875). The honest headline:
+  no demonstrated overall advantage for the 3D foundation model over a free
+  fingerprint on this benchmark — mirroring the field-wide picture of
+  arXiv:2508.06199 at sensory scale.
+- Caveats: n=5 bounds attainable power (min p=0.0625); logistic regression
+  is the weaker fingerprint classifier (a fingerprint + random forest
+  control remains); the LoRA run may be undertrained (validation still
+  rising at epoch 30 on folds 1–2), so a longer-training ablation is the
+  fair rematch before conceding odor.
+
+Artifacts: `outputs/v3_fingerprint_lr/fold{0..4}_metrics.json` and
+`reports/v3_fingerprint_lr_5fold/summary.{json,md}` (bit-identical
+re-aggregation verified).
+
 ## Historical v2 fold 0 ablations (`sensory-v2`, not comparable to v3)
 
 All entries in this section used the historical `sensory-v2` four-label taste

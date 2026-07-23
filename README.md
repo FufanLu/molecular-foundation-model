@@ -33,6 +33,12 @@ remain unreliable, with nutty swinging 0.087→0.585 across folds. See the
 [experiment ledger](reports/EXPERIMENT_LEDGER.md) for the full per-fold table,
 retrieval probes, and reading notes.
 
+A 2D control (Morgan fingerprints + per-label balanced logistic regression)
+on the identical folds reaches a combined score of 0.6352 ± 0.0182: it wins
+taste on every fold, while the 3D model leads odor on 4 of 5 folds. The
+combined comparison is a statistical tie — see the ledger for the paired
+analysis.
+
 ## Historical reference run
 
 The following Fold 0 result used the earlier `sensory-v2` four-label taste
