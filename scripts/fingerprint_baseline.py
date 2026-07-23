@@ -32,6 +32,7 @@ from src.dataset.sensory import (
     ODOR_FAMILIES,
     SCHEMA_VERSION,
     TASTE_LABELS,
+    _map_terms,
     build_masked_targets,
 )
 from src.sensory.metrics import macro_f1, select_thresholds
@@ -42,7 +43,8 @@ NEGATIVE_SENTINEL_LOGIT = -10.0
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=Path("data/processed/sensory/molecules.parquet"))
-    parser.add_argument("--output-dir", type=Path, default=Path("outputs/v3_fingerprint_lr"))
+    parser.add_argument("--output-dir", type=Path, default=None,
+                        help="Default: outputs/v3_fingerprint_lr (or ..._shuffle with --shuffle-ontology).")
     parser.add_argument("--folds", type=str, default=None, help="Comma-separated test folds; default is every fold.")
     parser.add_argument("--radius", type=int, default=2)
     parser.add_argument("--n-bits", type=int, default=2048)
@@ -50,7 +52,42 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-iter", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--include-mixtures", action="store_true")
+    parser.add_argument("--shuffle-ontology", type=int, default=None, metavar="SEED",
+                        help="Negative control: shuffle the odor-family grouping with this seed.")
+    parser.add_argument("--source-records", type=Path, default=Path("data/processed/sensory/source_records.parquet"),
+                        help="Raw per-record descriptor evidence; required for --shuffle-ontology.")
     return parser.parse_args()
+
+
+def shuffled_taxonomy(
+    taxonomy: dict[str, set[str]],
+    seed: int,
+) -> dict[str, set[str]]:
+    """Permute descriptor terms across family slots, preserving slot counts.
+
+    The negative control for the ontology: family cardinalities and the term
+    inventory are unchanged, only the grouping is destroyed.  Deterministic
+    for a given seed.
+    """
+    slots = [(family, term) for family, aliases in taxonomy.items() for term in sorted(aliases)]
+    terms = [term for _, term in slots]
+    permutation = np.random.default_rng(seed).permutation(len(terms))
+    shuffled: dict[str, set[str]] = {family: set() for family in taxonomy}
+    for (family, _), index in zip(slots, permutation):
+        shuffled[family].add(terms[index])
+    return shuffled
+
+
+def molecule_odor_terms(source_records: pd.DataFrame) -> dict[str, set[str]]:
+    """Union of raw odor terms per canonical molecule."""
+    grouped: dict[str, set[str]] = {}
+    for _, row in source_records.iterrows():
+        smiles = row["canonical_smiles"]
+        if not isinstance(smiles, str) or not smiles:
+            continue
+        terms = row["odor_terms"] if isinstance(row["odor_terms"], (list, tuple)) else []
+        grouped.setdefault(smiles, set()).update(terms)
+    return grouped
 
 
 def morgan_features(smiles: list[str], radius: int, n_bits: int) -> np.ndarray:
@@ -197,6 +234,7 @@ def run_fold(
             "class_weight": "balanced",
             "solver": "liblinear",
             "C": args.regularisation,
+            "shuffle_ontology_seed": args.shuffle_ontology,
         },
     }
     print(
@@ -222,6 +260,25 @@ def main() -> None:
     frame = frame.loc[keep].reset_index(drop=True)
     if frame.empty:
         raise RuntimeError("No evaluable molecules after filtering.")
+
+    if args.shuffle_ontology is not None:
+        if not args.source_records.exists():
+            raise RuntimeError(f"--shuffle-ontology needs raw descriptor evidence: {args.source_records} not found")
+        taxonomy = shuffled_taxonomy(ODOR_FAMILIES, args.shuffle_ontology)
+        terms_by_smiles = molecule_odor_terms(pd.read_parquet(args.source_records))
+        frame["odor_labels"] = [
+            sorted(_map_terms(terms_by_smiles.get(smiles, ()), taxonomy))
+            for smiles in frame["canonical_smiles"]
+        ]
+        # Molecules whose terms hit no shuffled family become fully unknown (-1).
+        frame["odor_known"] = frame["odor_labels"].apply(bool)
+        print(
+            f"NEGATIVE CONTROL: odor ontology grouping shuffled (seed={args.shuffle_ontology}); "
+            "results are not comparable to archived runs"
+        )
+    if args.output_dir is None:
+        suffix = "_shuffle" if args.shuffle_ontology is not None else ""
+        args.output_dir = Path(f"outputs/v3_fingerprint_lr{suffix}")
 
     fold_plan = resolve_fold_plan(args, frame)
     print(f"molecules={len(frame)}; fold plan (test, val)={fold_plan}")

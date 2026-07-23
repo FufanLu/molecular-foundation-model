@@ -16,6 +16,7 @@ from scripts.fingerprint_baseline import (
     fit_label_models,
     morgan_features,
     run_fold,
+    shuffled_taxonomy,
 )
 
 RDKIT_AVAILABLE = importlib.util.find_spec("rdkit") is not None
@@ -51,6 +52,7 @@ class _Args:
     seed = 42
     radius = 2
     n_bits = 256
+    shuffle_ontology = None
 
 
 @unittest.skipUnless(RDKIT_AVAILABLE, "rdkit is not installed")
@@ -88,6 +90,23 @@ class FingerprintBaselineTest(unittest.TestCase):
         self.assertEqual(models, [None])
         scores = decision_scores(models, features)
         self.assertTrue((scores < -9.0).all())
+
+
+class ShuffledTaxonomyTest(unittest.TestCase):
+    TAXONOMY = {"alpha": {"a", "b", "c"}, "beta": {"d", "e"}, "gamma": {"f"}}
+
+    def test_slot_counts_and_term_inventory_preserved(self) -> None:
+        shuffled = shuffled_taxonomy(self.TAXONOMY, seed=0)
+        self.assertEqual({family: len(terms) for family, terms in shuffled.items()}, {"alpha": 3, "beta": 2, "gamma": 1})
+        self.assertEqual(set().union(*shuffled.values()), {"a", "b", "c", "d", "e", "f"})
+
+    def test_deterministic_per_seed(self) -> None:
+        self.assertEqual(shuffled_taxonomy(self.TAXONOMY, 7), shuffled_taxonomy(self.TAXONOMY, 7))
+        self.assertNotEqual(shuffled_taxonomy(self.TAXONOMY, 7), shuffled_taxonomy(self.TAXONOMY, 8))
+
+    def test_grouping_is_actually_destroyed(self) -> None:
+        shuffled = shuffled_taxonomy(self.TAXONOMY, seed=3)
+        self.assertNotEqual(shuffled, {family: set(terms) for family, terms in self.TAXONOMY.items()})
 
 
 if __name__ == "__main__":
