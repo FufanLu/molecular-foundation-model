@@ -21,7 +21,10 @@ from typing import Iterable, Sequence
 import pandas as pd
 
 
-SCHEMA_VERSION = "sensory-v3"
+# v4 removes the known ``cocoa`` overlap between ``sweet_aromatic`` and
+# ``nutty``.  This is a target-definition change, so v3 artefacts must never
+# be silently compared with regenerated data.
+SCHEMA_VERSION = "sensory-v4"
 RAW_DIR = Path(__file__).resolve().parents[2] / "data" / "raw"
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "processed" / "sensory"
 
@@ -58,7 +61,7 @@ ODOR_FAMILIES: dict[str, set[str]] = {
     "sweet_aromatic": {
         "caramel", "chocolate", "cocoa", "honey", "sweet", "vanilla",
     },
-    "nutty": {"almond", "cocoa", "nut skin", "nutty", "walnut"},
+    "nutty": {"almond", "nut skin", "nutty", "walnut"},
     "animalic": {"animal", "fishy", "leather", "musky", "sweaty"},
     "phenolic": {"medicinal", "phenolic", "smoky", "tobacco"},
     "aldehydic": {"aldehydic", "ethereal", "metallic", "pungent", "sharp"},
