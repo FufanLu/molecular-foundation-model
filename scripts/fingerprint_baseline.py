@@ -52,6 +52,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-iter", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--include-mixtures", action="store_true")
+    parser.add_argument("--force", action="store_true", help="Re-run folds even when metrics JSONs already exist.")
     parser.add_argument("--shuffle-ontology", type=int, default=None, metavar="SEED",
                         help="Negative control: shuffle the odor-family grouping with this seed.")
     parser.add_argument("--source-records", type=Path, default=Path("data/processed/sensory/source_records.parquet"),
@@ -290,7 +291,7 @@ def main() -> None:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for test_fold, val_fold in fold_plan:
         metrics_path = args.output_dir / f"fold{test_fold}_metrics.json"
-        if metrics_path.exists():
+        if metrics_path.exists() and not args.force:
             print(f"fold {test_fold}: {metrics_path} already exists, skipping")
             continue
         result = run_fold(args, features, frame, odor_targets, taste_targets, test_fold, val_fold)
